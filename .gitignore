@@ -1,0 +1,10 @@
+*
+!.gitignore
+!*.c
+!*.cpp
+!*.h
+!*.ui
+!*.json
+!*.txt
+!*.user
+!*.sh

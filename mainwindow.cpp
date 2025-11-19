@@ -18,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_socketManager(std::make_unique<SocketManager>(this))
 {
     ui->setupUi(this);
+    this->setWindowTitle("json plot v1.0");
 
     // Each tab shares the same repository/socket manager but exposes different tooling.
     auto *tabs = new QTabWidget(this);

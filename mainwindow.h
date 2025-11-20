@@ -15,6 +15,7 @@ class DataRepository;
 class SocketManager;
 class WatchWidget;
 class PlotWidget;
+class DebugWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -30,5 +31,7 @@ private:
     std::unique_ptr<SocketManager> m_socketManager;
     WatchWidget *m_watchWidget = nullptr;
     PlotWidget *m_plotWidget = nullptr;
+    DebugWidget *m_debugWidget = nullptr;
+
 };
 #endif // MAINWINDOW_H

@@ -92,6 +92,85 @@ SocketManager::~SocketManager()
     resetTransports();
 }
 
+bool SocketManager::sendPayload(const QByteArray &payload, QString *errorMessage)
+{
+    auto setError = [errorMessage](const QString &message) {
+        if (errorMessage) {
+            *errorMessage = message;
+        }
+    };
+
+    if (payload.isEmpty()) {
+        setError(tr("Payload is empty"));
+        return false;
+    }
+    if (!m_connected) {
+        setError(tr("No active connection"));
+        return false;
+    }
+
+    switch (m_currentSource) {
+    case SourceType::Serial:
+        if (!m_serial) {
+            setError(tr("Serial port is not open"));
+            return false;
+        }
+        if (m_serial->write(payload) < 0) {
+            setError(tr("Serial send failed: %1").arg(m_serial->errorString()));
+            return false;
+        }
+        m_serial->flush();
+        return true;
+    case SourceType::Tcp:
+        if (!m_tcp || m_tcp->state() != QAbstractSocket::ConnectedState) {
+            setError(tr("TCP socket is not connected"));
+            return false;
+        }
+        if (m_tcp->write(payload) < 0) {
+            setError(tr("TCP send failed: %1").arg(m_tcp->errorString()));
+            return false;
+        }
+        m_tcp->flush();
+        return true;
+    case SourceType::Udp: {
+        if (!m_udp) {
+            setError(tr("UDP socket is not open"));
+            return false;
+        }
+
+        QHostAddress destination;
+        quint16 port = 0;
+        if (!m_udpRemoteHost.isEmpty() && m_udpRemotePort != 0) {
+            if (!destination.setAddress(m_udpRemoteHost)) {
+                if (QString::compare(m_udpRemoteHost, QStringLiteral("localhost"), Qt::CaseInsensitive) == 0) {
+                    destination = QHostAddress::LocalHost;
+                } else {
+                    setError(tr("UDP remote address is invalid"));
+                    return false;
+                }
+            }
+            port = m_udpRemotePort;
+        } else if (!m_udpLastSender.isNull() && m_udpLastSenderPort != 0) {
+            destination = m_udpLastSender;
+            port = m_udpLastSenderPort;
+        } else {
+            setError(tr("UDP destination is not configured"));
+            return false;
+        }
+
+        const qint64 written = m_udp->writeDatagram(payload, destination, port);
+        if (written < 0) {
+            setError(tr("UDP send failed: %1").arg(m_udp->errorString()));
+            return false;
+        }
+        return true;
+    }
+    }
+
+    setError(tr("Unsupported transport type"));
+    return false;
+}
+
 // Connect to a serial port based on the provided settings.
 void SocketManager::connectSerial(const SerialSettings &settings)
 {
@@ -110,7 +189,7 @@ void SocketManager::connectSerial(const SerialSettings &settings)
     port->setStopBits(QSerialPort::OneStop);
     port->setFlowControl(QSerialPort::NoFlowControl);
 
-    if (!port->open(QIODevice::ReadOnly)) {
+    if (!port->open(QIODevice::ReadWrite)) {
         emit statusChanged(tr("Failed to open serial port: %1").arg(port->errorString()), true);
         return;
     }
@@ -189,6 +268,10 @@ void SocketManager::connectUdp(const UdpSettings &settings)
     m_connected = true;
     m_currentSource = SourceType::Udp;
     m_lastEndpoint = QStringLiteral("UDP(%1)").arg(settings.localPort);
+    m_udpRemoteHost = settings.remoteHost.trimmed();
+    m_udpRemotePort = settings.remotePort;
+    m_udpLastSender = QHostAddress();
+    m_udpLastSenderPort = 0;
 
     emit connectionStateChanged(true);
     emit statusChanged(tr("UDP listening on local port %1").arg(settings.localPort), false);
@@ -231,7 +314,13 @@ void SocketManager::handleUdpReadyRead()
     while (m_udp->hasPendingDatagrams()) {
         QByteArray buffer;
         buffer.resize(int(m_udp->pendingDatagramSize()));
-        m_udp->readDatagram(buffer.data(), buffer.size());
+        QHostAddress senderAddress;
+        quint16 senderPort = 0;
+        m_udp->readDatagram(buffer.data(), buffer.size(), &senderAddress, &senderPort);
+        if (!senderAddress.isNull()) {
+            m_udpLastSender = senderAddress;
+            m_udpLastSenderPort = senderPort;
+        }
         emit dataFrame(buffer);
     }
 }
@@ -269,6 +358,10 @@ void SocketManager::resetTransports()
     }
 
     resetFrameExtractor();
+    m_udpRemoteHost.clear();
+    m_udpRemotePort = 0;
+    m_udpLastSender = QHostAddress();
+    m_udpLastSenderPort = 0;
 }
 
 // Clear the JSON frame extraction buffers.

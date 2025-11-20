@@ -3,6 +3,10 @@
 
 #include <QObject>
 
+#include <QByteArray>
+#include <QHostAddress>
+#include <QString>
+
 #include <memory>
 
 class QSerialPort;
@@ -46,6 +50,8 @@ public:
     bool isConnected() const { return m_connected; }
     SourceType currentSource() const { return m_currentSource; }
 
+    bool sendPayload(const QByteArray &payload, QString *errorMessage = nullptr);
+
 public slots:
     void connectSerial(const SerialSettings &settings);
     void connectTcp(const TcpSettings &settings);
@@ -75,6 +81,10 @@ private:
     bool m_connected = false;
     SourceType m_currentSource = SourceType::Serial;
     QString m_lastEndpoint;
+    QString m_udpRemoteHost;
+    quint16 m_udpRemotePort = 0;
+    QHostAddress m_udpLastSender;
+    quint16 m_udpLastSenderPort = 0;
 };
 
 #endif // SOCKET_MANGER_H

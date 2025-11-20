@@ -25,6 +25,8 @@ set(PROJECT_SOURCES
         watchwidget.h
         plotwidget.cpp
         plotwidget.h
+        debug_widget.cpp
+        debug_widget.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

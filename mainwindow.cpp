@@ -2,6 +2,7 @@
 #include "./ui_mainwindow.h"
 
 #include "datarepository.h"
+#include "debug_widget.h"
 #include "plotwidget.h"
 #include "socket_manger.h"
 #include "watchwidget.h"
@@ -24,8 +25,10 @@ MainWindow::MainWindow(QWidget *parent)
     auto *tabs = new QTabWidget(this);
     m_watchWidget = new WatchWidget(m_repository.get(), m_socketManager.get(), tabs);
     m_plotWidget = new PlotWidget(m_repository.get(), tabs);
+    m_debugWidget = new DebugWidget(m_socketManager.get(), tabs);
     tabs->addTab(m_watchWidget, tr("Live Monitor"));
     tabs->addTab(m_plotWidget, tr("Plot View"));
+    tabs->addTab(m_debugWidget, tr("Debug Console"));
 
     auto *layout = new QVBoxLayout();
     layout->setContentsMargins(0, 0, 0, 0);

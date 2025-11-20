@@ -66,7 +66,7 @@ void DebugWidget::buildUi()
     m_logView->setReadOnly(true);
     trafficLayout->addWidget(m_logView, 1);
 
-    root->addWidget(trafficBox, 1);
+    root->addWidget(trafficBox, 5);
 
     auto *sendBox = new QGroupBox(tr("Send Data"), this);
     auto *sendLayout = new QVBoxLayout(sendBox);
@@ -87,7 +87,7 @@ void DebugWidget::buildUi()
     sendControls->addWidget(m_sendButton);
     sendLayout->addLayout(sendControls);
 
-    root->addWidget(sendBox);
+    root->addWidget(sendBox, 1);
 
     connect(m_logFormatButton, &QPushButton::clicked, this, &DebugWidget::handleLogFormatToggled);
     connect(m_sendFormatButton, &QPushButton::clicked, this, &DebugWidget::handleSendFormatToggled);

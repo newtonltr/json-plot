@@ -52,6 +52,9 @@ else()
     endif()
 endif()
 
+target_sources(${PROJECT_NAME} PRIVATE JsonPlot.rc)
+
+
 target_link_libraries(json_plot PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::Network
